@@ -47,10 +47,12 @@ function setupDiscordState(agentId, agent) {
   const stateDir = `${AGENTS_STATE_BASE}/${agentId}/discord`;
   mkdirSync(stateDir, { recursive: true });
 
+  // 봇 토큰
   if (agent.botToken) {
     writeFileSync(`${stateDir}/.env`, `DISCORD_BOT_TOKEN=${agent.botToken}\n`, { mode: 0o600 });
   }
 
+  // access.json
   const access = {
     dmPolicy: 'allowlist',
     allowFrom: agent.allowFrom || [],
@@ -66,7 +68,7 @@ function setupDiscordState(agentId, agent) {
   }
 
   writeFileSync(`${stateDir}/access.json`, JSON.stringify(access, null, 2) + '\n');
-  console.log(`[setup] ${agentId} — Discord state 설정 완료`);
+  console.log(`[setup] ${agentId} — Discord state 설정 완료 (${stateDir})`);
 }
 
 export function sessionExists(sessionName) {
@@ -88,6 +90,11 @@ function createSession(sessionName, agent) {
 
   const cmd = `export DISCORD_STATE_DIR='${stateDir}' && claude --dangerously-skip-permissions --chrome --channels plugin:discord@claude-plugins-official`;
   execSync(`tmux send-keys -t ${sessionName} "${cmd}" Enter`);
+
+  // trust 프롬프트 자동 수락 (3초 대기 후 Enter)
+  execSync('sleep 3');
+  try { execSync(`tmux send-keys -t ${sessionName} Enter`); } catch {}
+
   console.log(`[tmux] ${sessionName} — 세션 생성 완료 (${agent.repo})`);
 }
 
