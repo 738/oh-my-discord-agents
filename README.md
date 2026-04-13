@@ -1,4 +1,4 @@
-# Oh My Discord
+# Oh My Discord Agents
 
 > 하나의 서버에서 여러 Claude Code 에이전트를 Discord 채널로 운영하는 템플릿
 
@@ -49,8 +49,8 @@ Claude Code의 `--channels plugin:discord@claude-plugins-official` 기능으로 
 ### 1. 클론
 
 ```bash
-git clone https://github.com/738/oh-my-discord.git
-cd oh-my-discord
+git clone https://github.com/738/oh-my-discord-agents.git
+cd oh-my-discord-agents
 ```
 
 ### 2. Discord 봇 생성
@@ -137,7 +137,7 @@ Discord 채널에 메시지를 보내서 응답이 오는지 확인합니다.
 ## 파일 구조
 
 ```
-oh-my-discord/
+oh-my-discord-agents/
 ├── src/
 │   ├── index.js      # 엔트리포인트
 │   ├── config.js     # agents.json 로드 + 핫 리로드 (3초)
