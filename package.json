@@ -1,0 +1,11 @@
+{
+  "name": "claude-code-discord-agent-hub",
+  "version": "1.0.0",
+  "description": "Run multiple Claude Code agents via Discord channels on a single server",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --env-file=.env src/index.js",
+    "start": "node --env-file=.env src/index.js"
+  }
+}

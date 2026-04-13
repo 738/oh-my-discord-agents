@@ -1,0 +1,16 @@
+{
+  "my-project": {
+    "channelId": "DISCORD_CHANNEL_ID",
+    "repo": "/path/to/my-project",
+    "botToken": "DISCORD_BOT_TOKEN",
+    "allowFrom": ["DISCORD_USER_ID"],
+    "description": "프로젝트 설명"
+  },
+  "another-project": {
+    "channelId": "DISCORD_CHANNEL_ID",
+    "repo": "/path/to/another-project",
+    "botToken": "DISCORD_BOT_TOKEN",
+    "allowFrom": ["DISCORD_USER_ID"],
+    "description": "다른 프로젝트 설명"
+  }
+}
