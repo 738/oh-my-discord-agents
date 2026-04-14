@@ -42,7 +42,6 @@ Claude Code의 `--channels plugin:discord@claude-plugins-official` 기능으로 
 - [Claude Code](https://claude.ai/code) 설치 + `claude login` (OAuth)
 - [Bun](https://bun.sh) 설치 (Discord 채널 플러그인 런타임)
 - Claude Code 내에서 `/plugin install discord@claude-plugins-official`
-- [Claude Max](https://claude.ai) 플랜 ($200/월) — OAuth 인증에 필요
 
 ## 빠른 시작
 
@@ -175,7 +174,6 @@ tmux kill-server && npm run dev
 
 ## 주의사항
 
-- **Claude Max 플랜** ($200/월)이 필요합니다 (OAuth 인증)
 - 에이전트가 idle 상태일 때는 토큰을 소비하지 않습니다
 - `agents.json`에 봇 토큰이 포함되므로 **public repo에 올리지 마세요**
 - 서버 재부팅 시 `npm run dev`를 다시 실행해야 합니다 (systemd 등록 권장)
