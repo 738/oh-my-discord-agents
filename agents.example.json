@@ -1,13 +1,18 @@
 {
   "my-project": {
-    "channelId": "DISCORD_CHANNEL_ID",
+    "channels": [
+      { "id": "CHANNEL_ID_1", "requireMention": false },
+      { "id": "CHANNEL_ID_2", "requireMention": true }
+    ],
     "repo": "/path/to/my-project",
     "botToken": "DISCORD_BOT_TOKEN",
     "allowFrom": ["DISCORD_USER_ID"],
     "description": "프로젝트 설명"
   },
   "another-project": {
-    "channelId": "DISCORD_CHANNEL_ID",
+    "channels": [
+      { "id": "CHANNEL_ID", "requireMention": true }
+    ],
     "repo": "/path/to/another-project",
     "botToken": "DISCORD_BOT_TOKEN",
     "allowFrom": ["DISCORD_USER_ID"],

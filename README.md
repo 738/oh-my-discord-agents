@@ -30,6 +30,38 @@
 └──────────────────────────────────────┘
 ```
 
+## 실행 구조
+
+```mermaid
+graph TD
+    A[npm run dev] --> B[index.js]
+    B --> C[config.js<br/>agents.json 로드]
+    B --> D[tmux.js<br/>initAllSessions]
+    B --> E[health.js<br/>startHealthCheck]
+
+    C -->|watchFile 3초| C1{agents.json 변경?}
+    C1 -->|Yes| C2[리로드 + onReload 콜백]
+    C2 --> D2[initNewSessions<br/>새 에이전트만 세션 생성]
+
+    D --> F{에이전트별 루프}
+    F --> G{세션 존재?}
+    G -->|No| H[setupDiscordState<br/>봇토큰 + access.json 생성]
+    H --> I[createSession<br/>tmux 세션 생성]
+    I --> J[claude --channels discord<br/>DISCORD_STATE_DIR 격리]
+    G -->|Yes| K[스킵]
+
+    E -->|5분 간격| L{에이전트별 체크}
+    L --> M{세션 살아있음?}
+    M -->|No| N[restartSession<br/>자동 복구]
+    N -->|webhook| O[Discord 알림]
+    M -->|Yes| P[패스]
+
+    style A fill:#4a9eff,color:#fff
+    style J fill:#5865F2,color:#fff
+    style N fill:#ed4245,color:#fff
+    style O fill:#57F287,color:#fff
+```
+
 ## 핵심 원리
 
 Claude Code의 `--channels plugin:discord@claude-plugins-official` 기능으로 Discord 채널과 연결합니다.
@@ -84,14 +116,19 @@ cp agents.example.json agents.json
 ```json
 {
   "project-a": {
-    "channelId": "디스코드채널ID",
+    "channels": [
+      { "id": "디스코드채널ID_1", "requireMention": false },
+      { "id": "디스코드채널ID_2", "requireMention": true }
+    ],
     "repo": "/path/to/project-a",
     "botToken": "봇토큰",
     "allowFrom": ["디스코드유저ID"],
     "description": "프로젝트 A"
   },
   "project-b": {
-    "channelId": "디스코드채널ID",
+    "channels": [
+      { "id": "디스코드채널ID", "requireMention": true }
+    ],
     "repo": "/path/to/project-b",
     "botToken": "봇토큰",
     "allowFrom": ["디스코드유저ID"],
@@ -102,7 +139,9 @@ cp agents.example.json agents.json
 
 | 필드 | 설명 |
 |------|------|
-| `channelId` | Discord 채널 ID |
+| `channels` | 채널 설정 배열 |
+| `channels[].id` | Discord 채널 ID |
+| `channels[].requireMention` | `true`면 해당 채널에서 봇 멘션 시에만 응답 (기본값: `false`) |
 | `repo` | 프로젝트 레포 경로 (절대 경로) |
 | `botToken` | Discord 봇 토큰 |
 | `allowFrom` | 허용할 Discord 유저 ID 목록 |
@@ -177,6 +216,23 @@ tmux kill-server && npm run dev
 - 에이전트가 idle 상태일 때는 토큰을 소비하지 않습니다
 - `agents.json`에 봇 토큰이 포함되므로 **public repo에 올리지 마세요**
 - 서버 재부팅 시 `npm run dev`를 다시 실행해야 합니다 (systemd 등록 권장)
+
+## Release Notes
+
+### v1.1.0
+
+- **멀티 채널 지원**: 하나의 에이전트가 여러 Discord 채널에서 동시에 응답할 수 있도록 `channels` 배열 설정 추가
+- **채널별 멘션 옵션**: `requireMention` 옵션으로 채널마다 봇 멘션 필요 여부를 개별 설정 가능
+- **실행 구조 다이어그램**: README에 mermaid 기반 시스템 흐름도 추가
+- **하위 호환**: 기존 `channelId` 단일값 형식도 계속 동작
+
+### v1.0.0
+
+- 초기 릴리즈
+- tmux 기반 멀티 에이전트 세션 관리
+- `DISCORD_STATE_DIR` 격리로 봇 토큰 분리
+- agents.json 핫 리로드 (3초 간격)
+- 5분 헬스체크 + 자동 복구 + webhook 알림
 
 ## 라이선스
 

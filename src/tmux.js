@@ -60,9 +60,10 @@ function setupDiscordState(agentId, agent) {
     pending: {},
   };
 
-  if (agent.channelId) {
-    access.groups[agent.channelId] = {
-      requireMention: false,
+  const channels = agent.channels || (agent.channelId ? [{ id: agent.channelId }] : []);
+  for (const ch of channels) {
+    access.groups[ch.id] = {
+      requireMention: ch.requireMention ?? false,
       allowFrom: agent.allowFrom || [],
     };
   }
