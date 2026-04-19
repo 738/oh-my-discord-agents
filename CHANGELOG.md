@@ -12,7 +12,7 @@
   - 원격 모드 (`REMOTE_SSH=<host>` 설정 시): git commit + push → SSH → git pull → clone → fresh
   - `ALLOW_FROM` 환경변수로 Discord 유저 ID 지정
 
-## [1.3.0] - 2026-04-15
+## [1.3.0] - 2026-04-20
 
 ### Added
 - `agents send <id> "<text>"` — tmux send-keys 기반으로 임의 slash command 전달
@@ -22,7 +22,7 @@
 - `scripts/install-admin-commands.sh` / `uninstall-admin-commands.sh` — 각 레포 `CLAUDE.md`에 관리자 명령어 지침 자동 주입/해제
 - `docs/ADMIN_COMMANDS.md` — 에이전트가 참조하는 Discord 관리자 명령어 가이드
 
-## [1.2.0] - 2026-04-14
+## [1.2.0] - 2026-04-19
 
 ### Added
 - `agents` CLI — 세션 수동 제어 (list / status / restart / fresh / kill / attach / logs / init)
@@ -30,7 +30,7 @@
 - `agents fresh` / `fresh-all` — 새 세션 (히스토리 리셋)
 - `--parallel` 플래그로 전체 재시작 병렬화
 
-## [1.1.0] - 2026-04-13
+## [1.1.0] - 2026-04-14
 
 ### Added
 - `agents.json`에 `channels` 배열 지원 — 에이전트 하나가 여러 채널 수신 가능
@@ -39,7 +39,7 @@
 ### Changed
 - 단일 `channelId` 필드는 `channels: [{id, requireMention}]` 배열 구조로 마이그레이션
 
-## [1.0.0] - 2026-04-12
+## [1.0.0] - 2026-04-14
 
 ### Added
 - 초기 릴리스
