@@ -1,6 +1,6 @@
 {
   "name": "oh-my-discord-agents",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Run multiple Claude Code agents via Discord channels on a single server",
   "type": "module",
   "main": "src/index.js",
