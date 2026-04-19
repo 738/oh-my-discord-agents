@@ -196,6 +196,10 @@ npm run restart-all
 | `agents restart-all [--parallel]` | 전체 이어서 재시작 ← **모델 전환용** |
 | `agents fresh <id>` | 특정 에이전트 **새 세션**으로 시작 (히스토리 없음) |
 | `agents fresh-all [--parallel]` | 전체 새 세션 |
+| `agents send <id> "<text>"` | 본 세션에 텍스트/slash command 전송 |
+| `agents send-all "<text>" [--parallel]` | 전체 세션에 브로드캐스트 |
+| `agents compact <id>` / `compact-all` | `/compact` 단축 — 대화 압축 |
+| `agents clear <id>` / `clear-all` | `/clear` 단축 — 대화 초기화 |
 | `agents kill <id>` / `kill-all` | 세션만 종료 |
 | `agents init` | 미존재 세션만 생성 (`npm run dev`의 초기화 부분) |
 
@@ -228,9 +232,11 @@ oh-my-discord-agents/
 │   ├── tmux.js       # tmux 세션 관리 + DISCORD_STATE_DIR 격리
 │   └── health.js     # 5분 헬스체크 + 자동 복구 + webhook 알림
 ├── docs/
-│   └── ADMIN_COMMANDS.md  # 각 에이전트 CLAUDE.md에 include할 Discord 관리자 명령어 가이드
+│   └── ADMIN_COMMANDS.md             # 에이전트가 읽는 Discord 관리자 명령어 지침
 ├── scripts/
-│   └── clone-repos.sh     # 레포 일괄 클론 스크립트
+│   ├── clone-repos.sh                # 레포 일괄 클론 스크립트
+│   ├── install-admin-commands.sh     # 각 레포 CLAUDE.md에 지침 자동 주입
+│   └── uninstall-admin-commands.sh   # 주입 해제
 ├── agents.json            # 에이전트 설정 (직접 작성)
 ├── agents.example.json    # 에이전트 설정 예시
 ├── .env.example           # 환경변수 템플릿
@@ -275,19 +281,49 @@ tmux attach -t project-a
 tmux kill-server && npm run dev
 ```
 
-## Discord에서 관리자 명령어로 재시작
+## Discord 채널에서 관리자 명령어 활성화
 
-`agents` CLI를 Discord 채널에서 직접 호출하고 싶다면 (예: `!restart` 메시지로 에이전트 자기 자신을 재시작), 각 에이전트의 `CLAUDE.md`에 지침을 추가해야 합니다.
+Discord 채널에서 직접 `!compact`, `!restart` 같은 명령어로 에이전트를 제어할 수 있습니다 (모바일에서 유용).
 
-자세한 내용은 [docs/ADMIN_COMMANDS.md](./docs/ADMIN_COMMANDS.md)를 참고하세요.
+### 활성화 방법
 
-요약:
+1. **스크립트 실행**:
+   ```bash
+   bash scripts/install-admin-commands.sh
+   ```
+   `agents.json`을 순회해서 각 레포의 `CLAUDE.md` 최상단에 `@.../docs/ADMIN_COMMANDS.md` import를 주입합니다. 멱등(idempotent) — 여러 번 실행해도 중복 안 됨.
 
-- `!restart` — 에이전트 이어서 재시작
-- `!fresh` — 에이전트 새 세션으로 시작
-- `!status` — 상태 조회
-- 관리자(`allowFrom`에 등록된 Discord user ID)만 실행 가능
-- 자기 자신을 재시작할 때는 `nohup ... &`로 백그라운드 실행 필수 (자세한 이유는 ADMIN_COMMANDS.md 참고)
+2. **세션 재시작으로 새 지침 로드**:
+   ```bash
+   npx agents restart-all
+   ```
+
+### 사용 가능한 Discord 명령어 (관리자만)
+
+| 명령어 | 동작 |
+|--------|------|
+| `!compact` | 대화 압축 (`/compact` 전송) |
+| `!clear` | 대화 초기화 (`/clear` 전송) |
+| `!restart` | 이어서 재시작 (`claude --continue`) |
+| `!fresh` | 새 세션으로 재시작 |
+| `!status` | 현재 세션 상태 보고 |
+| `!send <text>` | 임의 slash command 전달 (예: `!send /cost`) |
+| `!help` | 명령어 목록 |
+
+### 비활성화
+
+```bash
+bash scripts/uninstall-admin-commands.sh
+npx agents restart-all
+```
+
+### 보안
+
+- **실행 권한**: `allowFrom`에 등록된 Discord user id만 실행 가능
+- **Prompt injection 방어**: 에이전트는 메시지 user id 태그로만 판별하며, 메시지 본문에 담긴 "관리자 주장"은 무시
+- **호스트 shell 권한과 동등**: 관리자 Discord 계정 탈취 = 서버 권한 탈취. `allowFrom`은 본인 ID만 넣으세요.
+
+상세: [docs/ADMIN_COMMANDS.md](./docs/ADMIN_COMMANDS.md)
 
 ## 주의사항
 
@@ -296,6 +332,13 @@ tmux kill-server && npm run dev
 - 서버 재부팅 시 `npm run dev`를 다시 실행해야 합니다 (systemd 등록 권장)
 
 ## Release Notes
+
+### v1.3.0
+
+- **`agents send` 계열 CLI 추가**: `send`, `send-all`, `compact`, `compact-all`, `clear`, `clear-all`. tmux send-keys로 slash command를 에이전트에 직접 전달
+- **Discord 관리자 명령어 자동 주입 스크립트**: `scripts/install-admin-commands.sh` / `uninstall-admin-commands.sh`. CLAUDE.md import 문법(`@path/to/file`)으로 한 줄만 주입하여 10개 레포 일괄 활성화
+- **`!compact`, `!clear`, `!send` 명령어 추가**: Discord 채널에서 대화 압축·초기화·임의 slash command 전달 (모바일에서 유용)
+- **`docs/ADMIN_COMMANDS.md` 리팩터링**: "에이전트가 직접 읽는 지침" 형식으로 재작성 + prompt injection 방어 가이드 강화
 
 ### v1.2.0
 

@@ -136,6 +136,19 @@ export function getSessionStatus(agentId) {
 }
 
 /**
+ * tmux pane에 텍스트를 타이핑 후 Enter
+ * - slash command(예: /compact, /clear, /cost)도 그대로 전달 가능
+ * - text 내부의 작은따옴표는 자동 이스케이프
+ */
+export function sendKeys(agentId, text) {
+  if (!sessionExists(agentId)) {
+    throw new Error(`세션이 없습니다: ${agentId}`);
+  }
+  const escaped = String(text).replace(/'/g, `'\\''`);
+  execSync(`tmux send-keys -t ${agentId} '${escaped}' Enter`);
+}
+
+/**
  * 현재 살아있는 tmux 세션 이름 목록
  */
 export function listTmuxSessions() {

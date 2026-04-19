@@ -8,6 +8,7 @@ import {
   sessionExists,
   getSessionStatus,
   listTmuxSessions,
+  sendKeys,
 } from './tmux.js';
 
 const [, , rawCmd, ...rest] = process.argv;
@@ -40,6 +41,14 @@ function usage() {
   fresh <id>                    특정 에이전트 새 세션
   fresh-all [--parallel]        전체 새 세션
 
+대화 제어 (tmux send-keys 기반 — slash command 전달)
+  send <id> "<text>"            본 세션에 텍스트 전송 + Enter
+  send-all "<text>" [--parallel]  전체 세션에 브로드캐스트
+  compact <id>                  send <id> "/compact" 단축
+  compact-all [--parallel]      전체 세션 /compact
+  clear <id>                    send <id> "/clear" 단축
+  clear-all [--parallel]        전체 세션 /clear
+
 기타
   kill <id>                     세션만 종료 (재시작 없이)
   kill-all                      모든 세션 종료
@@ -51,6 +60,8 @@ function usage() {
   agents restart-all            # Opus 4.7 등 새 모델로 이어서 전환
   agents fresh life-os          # life-os만 히스토리 리셋
   agents status business-os
+  agents send life-os "/cost"   # 임의 slash command 전달
+  agents compact-all --parallel # 전체 대화 압축 (동시에)
 `);
 }
 
@@ -67,6 +78,31 @@ function getLinesFlag(defaultValue) {
     if (m) return parseInt(m[1], 10);
   }
   return defaultValue;
+}
+
+async function runSendAll(text) {
+  const agents = getAgents();
+  const entries = Object.entries(agents);
+  const parallel = flags.has('--parallel');
+  console.log(`[cli] ${entries.length}개 에이전트에 송신 (${parallel ? '병렬' : '순차'}): ${JSON.stringify(text)}`);
+  const exec = async ([id]) => {
+    if (!sessionExists(id)) {
+      console.log(`  ⚠️ ${id} — 세션 없음, 스킵`);
+      return;
+    }
+    try {
+      sendKeys(id, text);
+      console.log(`  ✓ ${id}`);
+    } catch (err) {
+      console.log(`  ✗ ${id} — ${err.message}`);
+    }
+  };
+  if (parallel) {
+    await Promise.all(entries.map(exec));
+  } else {
+    for (const entry of entries) await exec(entry);
+  }
+  console.log('✅ 송신 완료');
 }
 
 async function runRestartAll({ continueSession }) {
@@ -153,6 +189,49 @@ async function main() {
       const agent = requireAgent(id);
       restartSession(id, agent, { continueSession: false });
       console.log(`✅ ${id} 새 세션 시작 완료`);
+      break;
+    }
+
+    case 'send': {
+      const id = args[0];
+      const text = args[1];
+      requireAgent(id);
+      if (text === undefined || text === '') die('전송할 텍스트를 지정하세요. 예: agents send life-os "/compact"');
+      sendKeys(id, text);
+      console.log(`✅ ${id} ← ${JSON.stringify(text)}`);
+      break;
+    }
+
+    case 'send-all': {
+      const text = args[0];
+      if (text === undefined || text === '') die('전송할 텍스트를 지정하세요. 예: agents send-all "/compact"');
+      await runSendAll(text);
+      break;
+    }
+
+    case 'compact': {
+      const id = args[0];
+      requireAgent(id);
+      sendKeys(id, '/compact');
+      console.log(`🗜️  ${id} /compact 전송`);
+      break;
+    }
+
+    case 'compact-all': {
+      await runSendAll('/compact');
+      break;
+    }
+
+    case 'clear': {
+      const id = args[0];
+      requireAgent(id);
+      sendKeys(id, '/clear');
+      console.log(`🧹 ${id} /clear 전송`);
+      break;
+    }
+
+    case 'clear-all': {
+      await runSendAll('/clear');
       break;
     }
 
