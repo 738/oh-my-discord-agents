@@ -247,6 +247,36 @@ oh-my-discord-agents/
 
 ## 에이전트 추가
 
+### 자동화 스크립트 (추천)
+
+Discord 채널 + 봇을 만들었다면 한 줄로 나머지를 자동화할 수 있습니다.
+
+```bash
+# 로컬/서버에서 바로 실행
+ALLOW_FROM=<디스코드유저ID> bash scripts/add-agent.sh \
+  <name> <repo-url> <channel-id> <bot-token> [description]
+
+# 예시
+ALLOW_FROM=1234567890 bash scripts/add-agent.sh \
+  my-app git@github.com:me/my-app.git 99887766554433 MTxxx "내 앱"
+```
+
+내부 흐름: `agents.json` 업데이트 → 레포 클론 (`.repos/<name>`) → `npx agents fresh <name>` → 상태 확인.
+
+**원격 서버에 SSH로 배포하는 경우**:
+
+```bash
+REMOTE_SSH=myserver \
+REMOTE_REPOS_DIR=/home/ubuntu/repos \
+REMOTE_HUB_DIR=~/oh-my-discord-agents \
+ALLOW_FROM=1234567890 \
+  bash scripts/add-agent.sh <name> <repo-url> <channel-id> <bot-token>
+```
+
+→ `git commit + push` → `ssh` → `git pull` → 레포 클론 → fresh 세션.
+
+### 수동
+
 1. Discord에 채널 + 봇 생성
 2. `agents.json`에 항목 추가
 3. 레포를 서버에 클론
