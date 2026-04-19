@@ -172,20 +172,68 @@ tmux attach -t project-a
 
 Discord 채널에 메시지를 보내서 응답이 오는지 확인합니다.
 
+## `agents` CLI
+
+세션을 수동 제어하기 위한 CLI입니다. 모델 전환 시 "대화 이어서 재시작"이 핵심.
+
+```bash
+# 전역 설치 또는 npx 사용
+npx agents <command>
+# 또는 npm scripts
+npm run list
+npm run restart-all
+```
+
+### 커맨드 일람
+
+| 커맨드 | 설명 |
+|--------|------|
+| `agents list` | 모든 에이전트와 세션 상태(🟢/🔴) |
+| `agents status <id>` | 특정 에이전트 상세 + 최근 출력 10줄 |
+| `agents logs <id> [--lines=N]` | tmux 최근 출력 |
+| `agents attach <id>` | tmux attach |
+| `agents restart <id>` | 특정 에이전트 **이어서** 재시작 (`claude --continue`) |
+| `agents restart-all [--parallel]` | 전체 이어서 재시작 ← **모델 전환용** |
+| `agents fresh <id>` | 특정 에이전트 **새 세션**으로 시작 (히스토리 없음) |
+| `agents fresh-all [--parallel]` | 전체 새 세션 |
+| `agents kill <id>` / `kill-all` | 세션만 종료 |
+| `agents init` | 미존재 세션만 생성 (`npm run dev`의 초기화 부분) |
+
+### 새 Claude 모델 출시 시 전환 가이드
+
+예: Opus 4.7 같은 새 모델이 나와서 모든 에이전트를 해당 모델로 전환하고 싶을 때.
+
+```bash
+# 1. 로컬에서 모델 업데이트 (Claude Code 자체 업데이트)
+claude --version
+# 필요 시 claude update 또는 재설치
+
+# 2. 모든 에이전트 세션을 "대화 이어서" 재시작
+npx agents restart-all
+# → tmux 세션 10개 순차로 claude --continue 로 재생성
+# → 각 채널에서 진행 중이던 대화는 그대로 이어짐
+# → 모델만 새 버전으로 바뀜
+```
+
+`restart-all`은 순차 실행이 기본입니다. tmux + Discord 플러그인 초기화가 리소스를 꽤 쓰므로 병렬 실행은 `--parallel` 플래그를 명시했을 때만 동작합니다.
+
 ## 파일 구조
 
 ```
 oh-my-discord-agents/
 ├── src/
-│   ├── index.js      # 엔트리포인트
+│   ├── index.js      # 엔트리포인트 (npm run dev)
+│   ├── cli.js        # agents CLI 엔트리포인트
 │   ├── config.js     # agents.json 로드 + 핫 리로드 (3초)
 │   ├── tmux.js       # tmux 세션 관리 + DISCORD_STATE_DIR 격리
 │   └── health.js     # 5분 헬스체크 + 자동 복구 + webhook 알림
+├── docs/
+│   └── ADMIN_COMMANDS.md  # 각 에이전트 CLAUDE.md에 include할 Discord 관리자 명령어 가이드
 ├── scripts/
-│   └── clone-repos.sh    # 레포 일괄 클론 스크립트
-├── agents.json           # 에이전트 설정 (직접 작성)
-├── agents.example.json   # 에이전트 설정 예시
-├── .env.example          # 환경변수 템플릿
+│   └── clone-repos.sh     # 레포 일괄 클론 스크립트
+├── agents.json            # 에이전트 설정 (직접 작성)
+├── agents.example.json    # 에이전트 설정 예시
+├── .env.example           # 환경변수 템플릿
 ├── .gitignore
 ├── package.json
 └── README.md
@@ -200,16 +248,46 @@ oh-my-discord-agents/
 
 ## 운영
 
+대부분의 작업은 `agents` CLI로 처리할 수 있습니다.
+
 ```bash
-# 전체 세션 확인
+# 상태 확인
+npx agents list              # 🟢/🔴 요약
+npx agents status project-a  # 단일 에이전트 상세 + 최근 출력
+
+# 접속
+npx agents attach project-a  # tmux attach 바로가기
+
+# 재시작
+npx agents restart project-a    # 이어서 재시작
+npx agents restart-all          # 전체 이어서 재시작 (모델 전환용)
+npx agents fresh project-a      # 새 세션 (히스토리 없음)
+
+# 강제 전체 초기화 (대화 히스토리 포함 리셋)
+npx agents kill-all && npx agents fresh-all
+```
+
+기존 수동 tmux 커맨드도 그대로 사용할 수 있습니다:
+
+```bash
 tmux ls
-
-# 특정 에이전트 세션 접속
 tmux attach -t project-a
-
-# 전체 재시작
 tmux kill-server && npm run dev
 ```
+
+## Discord에서 관리자 명령어로 재시작
+
+`agents` CLI를 Discord 채널에서 직접 호출하고 싶다면 (예: `!restart` 메시지로 에이전트 자기 자신을 재시작), 각 에이전트의 `CLAUDE.md`에 지침을 추가해야 합니다.
+
+자세한 내용은 [docs/ADMIN_COMMANDS.md](./docs/ADMIN_COMMANDS.md)를 참고하세요.
+
+요약:
+
+- `!restart` — 에이전트 이어서 재시작
+- `!fresh` — 에이전트 새 세션으로 시작
+- `!status` — 상태 조회
+- 관리자(`allowFrom`에 등록된 Discord user ID)만 실행 가능
+- 자기 자신을 재시작할 때는 `nohup ... &`로 백그라운드 실행 필수 (자세한 이유는 ADMIN_COMMANDS.md 참고)
 
 ## 주의사항
 
@@ -218,6 +296,12 @@ tmux kill-server && npm run dev
 - 서버 재부팅 시 `npm run dev`를 다시 실행해야 합니다 (systemd 등록 권장)
 
 ## Release Notes
+
+### v1.2.0
+
+- **`agents` CLI 추가**: 세션을 수동 제어하기 위한 서브커맨드 제공 (`list`, `status`, `logs`, `attach`, `restart`, `restart-all`, `fresh`, `fresh-all`, `kill`, `kill-all`, `init`)
+- **이어서 재시작 (`--continue`)**: 대화 히스토리를 유지한 채 Claude 프로세스만 재시작. 새 Claude 모델(예: Opus 4.7) 출시 시 `agents restart-all` 한 번으로 전체 전환 가능
+- **Discord 관리자 명령어 가이드 (`docs/ADMIN_COMMANDS.md`)**: 각 에이전트 CLAUDE.md에 include하여 `!restart` / `!fresh` 등을 Discord 채널에서 직접 사용할 수 있도록 지침 제공
 
 ### v1.1.0
 

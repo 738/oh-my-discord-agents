@@ -43,7 +43,7 @@ export function initNewSessions(agents) {
  * 에이전트별 Discord state 디렉토리 생성
  * DISCORD_STATE_DIR로 봇 토큰 + access.json 격리
  */
-function setupDiscordState(agentId, agent) {
+export function setupDiscordState(agentId, agent) {
   const stateDir = `${AGENTS_STATE_BASE}/${agentId}/discord`;
   mkdirSync(stateDir, { recursive: true });
 
@@ -83,20 +83,22 @@ export function sessionExists(sessionName) {
 
 /**
  * tmux 세션 생성
- * DISCORD_STATE_DIR로 에이전트별 봇 토큰 격리
+ * - DISCORD_STATE_DIR로 에이전트별 봇 토큰 격리
+ * - continueSession=true면 `claude --continue`로 직전 대화 이어가기 (모델 전환 등에 사용)
  */
-function createSession(sessionName, agent) {
+export function createSession(sessionName, agent, { continueSession = false } = {}) {
   const stateDir = `${AGENTS_STATE_BASE}/${sessionName}/discord`;
   execSync(`tmux new-session -d -s ${sessionName} -c ${agent.repo}`);
 
-  const cmd = `export DISCORD_STATE_DIR='${stateDir}' && claude --dangerously-skip-permissions --chrome --channels plugin:discord@claude-plugins-official`;
+  const continueFlag = continueSession ? '--continue ' : '';
+  const cmd = `export DISCORD_STATE_DIR='${stateDir}' && claude ${continueFlag}--dangerously-skip-permissions --chrome --channels plugin:discord@claude-plugins-official`;
   execSync(`tmux send-keys -t ${sessionName} "${cmd}" Enter`);
 
   // trust 프롬프트 자동 수락 (3초 대기 후 Enter)
   execSync('sleep 3');
   try { execSync(`tmux send-keys -t ${sessionName} Enter`); } catch {}
 
-  console.log(`[tmux] ${sessionName} — 세션 생성 완료 (${agent.repo})`);
+  console.log(`[tmux] ${sessionName} — 세션 생성 완료 (${agent.repo}${continueSession ? ', --continue' : ''})`);
 }
 
 export function killSession(agentId) {
@@ -108,9 +110,40 @@ export function killSession(agentId) {
   }
 }
 
-export function restartSession(agentId, agent) {
+/**
+ * 세션 재시작
+ * continueSession=true(기본값): 직전 대화 이어서 재시작 (claude --continue)
+ * continueSession=false: 새 세션으로 시작 (히스토리 없음)
+ */
+export function restartSession(agentId, agent, { continueSession = true } = {}) {
   killSession(agentId);
   setupDiscordState(agentId, agent);
-  createSession(agentId, agent);
-  console.log(`[tmux] ${agentId} — 세션 재시작`);
+  createSession(agentId, agent, { continueSession });
+  console.log(`[tmux] ${agentId} — 세션 재시작 (${continueSession ? '이어서' : '새로'})`);
+}
+
+/**
+ * 세션 상태 + 최근 출력 스냅샷
+ */
+export function getSessionStatus(agentId) {
+  const running = sessionExists(agentId);
+  if (!running) return { running: false, lastOutput: '' };
+  let lastOutput = '';
+  try {
+    lastOutput = execSync(`tmux capture-pane -t ${agentId} -p`).toString().trim();
+  } catch {}
+  return { running: true, lastOutput };
+}
+
+/**
+ * 현재 살아있는 tmux 세션 이름 목록
+ */
+export function listTmuxSessions() {
+  try {
+    const out = execSync(`tmux ls 2>/dev/null || true`).toString().trim();
+    if (!out) return [];
+    return out.split('\n').map((line) => line.split(':')[0]);
+  } catch {
+    return [];
+  }
 }

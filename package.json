@@ -1,11 +1,18 @@
 {
   "name": "oh-my-discord-agents",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Run multiple Claude Code agents via Discord channels on a single server",
   "type": "module",
   "main": "src/index.js",
+  "bin": {
+    "agents": "./src/cli.js"
+  },
   "scripts": {
     "dev": "node --env-file=.env src/index.js",
-    "start": "node --env-file=.env src/index.js"
+    "start": "node --env-file=.env src/index.js",
+    "cli": "node src/cli.js",
+    "list": "node src/cli.js list",
+    "restart-all": "node src/cli.js restart-all",
+    "fresh-all": "node src/cli.js fresh-all"
   }
 }
