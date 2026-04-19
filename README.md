@@ -363,6 +363,13 @@ npx agents restart-all
 
 ## Release Notes
 
+### v1.4.0
+
+- **`scripts/add-agent.sh` 추가**: 에이전트 추가 자동화. 봇 토큰 + 채널 ID + 레포 URL만 주면 `agents.json` 업데이트, 레포 클론, fresh 세션 시작까지 한 줄로 처리
+- **로컬/원격 듀얼 모드**: 기본은 로컬(`.repos/<name>`에 클론). `REMOTE_SSH` 환경변수 설정 시 git commit + push → SSH → git pull → clone → fresh 자동 실행
+- **`ALLOW_FROM` 환경변수**: Discord 유저 ID를 매번 타이핑하지 않도록 env로 지정 가능
+- **중복/누락 검증**: jq 설치 체크, 기존 에이전트 중복 방지, 필수 인자 검증
+
 ### v1.3.0
 
 - **`agents send` 계열 CLI 추가**: `send`, `send-all`, `compact`, `compact-all`, `clear`, `clear-all`. tmux send-keys로 slash command를 에이전트에 직접 전달
