@@ -124,13 +124,15 @@ export function restartSession(agentId, agent, { continueSession = true } = {}) 
 
 /**
  * 세션 상태 + 최근 출력 스냅샷
+ * scrollback: pane 위로 몇 줄까지 거슬러 올라가서 캡쳐할지 (기본 0 = 보이는 화면만)
  */
-export function getSessionStatus(agentId) {
+export function getSessionStatus(agentId, { scrollback = 0 } = {}) {
   const running = sessionExists(agentId);
   if (!running) return { running: false, lastOutput: '' };
   let lastOutput = '';
   try {
-    lastOutput = execSync(`tmux capture-pane -t ${agentId} -p`).toString().trim();
+    const startFlag = scrollback > 0 ? `-S -${scrollback}` : '';
+    lastOutput = execSync(`tmux capture-pane -t ${agentId} -p ${startFlag}`).toString().trim();
   } catch {}
   return { running: true, lastOutput };
 }

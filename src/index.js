@@ -1,6 +1,6 @@
 import { getAgents, onReload } from './config.js';
 import { initAllSessions, initNewSessions } from './tmux.js';
-import { startHealthCheck } from './health.js';
+import { startHealthCheck, startImageOverflowWatcher } from './health.js';
 
 console.log('🚀 Agent Hub 시작');
 
@@ -14,6 +14,8 @@ onReload((agents) => {
 });
 
 startHealthCheck();
+
+startImageOverflowWatcher();
 
 console.log('✅ Agent Hub 준비 완료');
 
