@@ -46,7 +46,7 @@ export function startImageOverflowWatcher() {
     for (const id of Object.keys(agents)) {
       if (!sessionExists(id)) continue;
 
-      const { lastOutput } = getSessionStatus(id, { scrollback: 200 });
+      const { lastOutput } = getSessionStatus(id);
       if (!IMAGE_OVERFLOW_PATTERN.test(lastOutput)) continue;
 
       const last = lastCompactAt.get(id) ?? 0;
